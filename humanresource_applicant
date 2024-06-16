@@ -1,0 +1,169 @@
+// 1. create project and add dependencies
+<dependencies>
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Starter Data JPA -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- H2 Database (for in-memory testing) -->
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+
+    <!-- Spring Boot Starter Test -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+// 2.define Entity class
+  package com.example.recruitmentservice.model;
+
+import javax.persistence.*;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "applicants")
+public class Applicant {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private LocalDate applicationDate;
+    private String resume;
+
+    // Constructors, getters, and setters
+
+    public Applicant() {}
+
+    public Applicant(String name, String email, String phoneNumber, LocalDate applicationDate, String resume) {
+        this.name = name;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.applicationDate = applicationDate;
+        this.resume = resume;
+    }
+
+    // Getters and setters
+}
+
+//3.define repository interface
+package com.example.recruitmentservice.repository;
+
+import com.example.recruitmentservice.model.Applicant;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ApplicantRepository extends JpaRepository<Applicant, Long> {
+}
+ //4.define service class
+package com.example.recruitmentservice.service;
+
+import com.example.recruitmentservice.model.Applicant;
+import com.example.recruitmentservice.repository.ApplicantRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class ApplicantService {
+
+    @Autowired
+    private ApplicantRepository applicantRepository;
+
+    public List<Applicant> getAllApplicants() {
+        return applicantRepository.findAll();
+    }
+
+    public Optional<Applicant> getApplicantById(Long id) {
+        return applicantRepository.findById(id);
+    }
+
+    public Applicant createApplicant(Applicant applicant) {
+        return applicantRepository.save(applicant);
+    }
+
+    public void deleteApplicant(Long id) {
+        applicantRepository.deleteById(id);
+    }
+}
+//5.define controller class
+package com.example.recruitmentservice.controller;
+
+import com.example.recruitmentservice.model.Applicant;
+import com.example.recruitmentservice.service.ApplicantService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/applicants")
+public class ApplicantController {
+
+    @Autowired
+    private ApplicantService applicantService;
+
+    @GetMapping
+    public List<Applicant> getAllApplicants() {
+        return applicantService.getAllApplicants();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Applicant> getApplicantById(@PathVariable Long id) {
+        Optional<Applicant> applicant = applicantService.getApplicantById(id);
+        return applicant.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Applicant createApplicant(@RequestBody Applicant applicant) {
+        return applicantService.createApplicant(applicant);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteApplicant(@PathVariable Long id) {
+        applicantService.deleteApplicant(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+//6.application implement class
+package com.example.recruitmentservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class RecruitmentServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(RecruitmentServiceApplication.class, args);
+    }
+}
+//7. application setting file
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+
